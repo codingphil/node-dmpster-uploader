@@ -1,5 +1,5 @@
 {
-  "name": "node.js-dmpster-uploader",
+  "name": "node-dmpster-uploader",
   "version": "0.0.1",
   "description": "script to upload .dmp files to dmpster",
   "main": "upload-to-dmpster.js",
