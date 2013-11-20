@@ -7,6 +7,7 @@ var config = require('./config');
 var uploadSingleDumpFile = require('./lib/upload-single-dumpfile.js');
 var findDumpFiles = require('./lib/find-dumpfiles.js');
 var uploadFileLogger = require('./lib/upload-file-logger.js');
+var FileObject = require('./lib/file-object.js');
 
 var dmpFileName = argv.f;
 var dmpDir = argv.d;
@@ -26,15 +27,63 @@ if (!config.uploadUrl) {
 console.log("Upload URL: '" + config.uploadUrl + "'");
 
 
-function uploadAndLogSingleDumpFile(dmpFileName, callback) {
-  uploadFileLogger.uploadStarted(dmpFileName);
-  uploadSingleDumpFile(config.uploadUrl, dmpFileName, tags, function(err, result) {
-    uploadFileLogger.uploadFinished(dmpFileName, err, result);
+function uploadAndLogSingleDumpFile(dmpFileObject, callback) {
+  uploadFileLogger.uploadStarted(dmpFileObject);
+  uploadSingleDumpFile(config.uploadUrl, dmpFileObject, tags, function(err, result) {
+    uploadFileLogger.uploadFinished(dmpFileObject, err, result);
     if (result) {
-      result.fullPath = dmpFileName;
+      result.fileObject = dmpFileObject;
     }
     callback(null, result);
   });
+}
+
+function createSingleFileObjectArray(filePath, callback) {
+  fs.stat(filePath, function(err, stat) {
+    if (err) {
+      callback(err);
+    }
+    else {
+      callback(null, [ new FileObject(filePath, stat) ]);
+    }
+  });
+}
+
+function uploadMultipleDumpFiles(dmpFileObjects, callback) {
+  async.mapLimit(dmpFileObjects, maxParallelUploads, uploadAndLogSingleDumpFile, function(err, results) {
+    callback(err, results);
+  });
+}
+
+function filterSuccessfulResults(uploadResults, callback) {
+  var filteredResults = uploadResults.filter(function(result) { return result; });
+  callback(null, filteredResults);
+}
+
+function sortFileObjects(fileObjects, callback) {
+  var sortedFileObjects = fileObjects.sort(function(lhs, rhs) {
+    return lhs.fullPath.localeCompare(rhs.fullPath);
+  });
+  callback(null, sortedFileObjects);
+}
+
+function formatFileSize(fileSize) {
+  var sizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+  return sizeMB + " MB";
+}
+
+function printFileNames(files, callback) {
+  
+  var totalSize = files.reduce(function(previous, current) { return previous + current.size; }, 0);
+  
+  console.log();
+  console.log("Found " + files.length + " dump files (" + formatFileSize(totalSize) + "):");
+  files.forEach(function(currFileObject) {
+    console.log("  " + currFileObject.fullPath + " (" + formatFileSize(currFileObject.size) + ")");
+  });
+  console.log();
+  
+  callback(null, files);
 }
 
 function finishUploadResultsHandler(err, results) {
@@ -49,57 +98,33 @@ function finishUploadResultsHandler(err, results) {
   }
 }
 
-function uploadMultipleDumpFiles(dmpFiles, callback) {
-  async.mapLimit(dmpFiles, maxParallelUploads, uploadAndLogSingleDumpFile, function(err, results) {
-    callback(err, results);
-  });
-}
-
-function filterSuccessfulResults(uploadResults, callback) {
-  var filteredResults = uploadResults.filter(function(result) { return result; });
-  callback(null, filteredResults);
-}
-
-function sortFileNames(files, callback) {
-  callback(null, files.sort());
-}
-
-function printFileNames(files, callback) {
-  console.log();
-  console.log("Found " + files.length + " dump files:");
-  files.forEach(function(currFile) {
-    console.log("  " + currFile);
-  });
-  console.log();
-  
-  callback(null, files);
-}
+var fileFindAsyncFunction;
 
 if (dmpFileName) {
   console.log("Filename:   '" + dmpFileName + "'");
   console.log("Tags:       '" + tags + "'");
   
-  async.waterfall(
-      [
-        function(callback) { callback(null, [ dmpFileName ]); },
-        uploadMultipleDumpFiles,
-        filterSuccessfulResults
-      ],
-      finishUploadResultsHandler);
+  fileFindAsyncFunction = function(callback) {
+    createSingleFileObjectArray(dmpFileName, callback);
+  };
 }
 else {
   console.log("Directory:  '" + dmpDir + "'");
   console.log("Tags:       '" + tags + "'");
   
-  async.waterfall(
+  fileFindAsyncFunction = function(callback) {
+    findDumpFiles(dmpDir, callback);
+  };
+  
+}
+
+async.waterfall(
     [
-      function(callback) { callback(null, dmpDir); },
-      findDumpFiles,
-      sortFileNames,
+      fileFindAsyncFunction,
+      sortFileObjects,
       printFileNames,
       uploadMultipleDumpFiles,
       filterSuccessfulResults
     ],
     finishUploadResultsHandler);
- 
-}
+
