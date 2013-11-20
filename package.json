@@ -5,8 +5,7 @@
   "main": "upload-to-dmpster.js",
   "dependencies": {
     "form-data": "~0.1.2",
-    "minimist": "0.0.5",
-    "node-dir": "~0.1.5"
+    "minimist": "0.0.5"
   },
   "devDependencies": {},
   "scripts": {

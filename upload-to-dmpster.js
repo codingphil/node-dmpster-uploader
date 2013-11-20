@@ -1,9 +1,9 @@
 var argv = require('minimist')(process.argv.slice(2));
-var dir = require('node-dir');
 var fs = require('fs');
 
 var config = require('./config');
 var uploadSingleDumpFile = require('./lib/upload-single-dumpfile.js');
+var findDumpFiles = require('./lib/find-dumpfiles');
 
 var dmpFileName = argv.f;
 var dmpDir = argv.d;
@@ -37,7 +37,7 @@ if (dmpFileName) {
   });
 }
 else {
-  findDmpFiles(dmpDir, function(err, dmpFiles) {
+  findDumpFiles(dmpDir, function(err, dmpFiles) {
     if (err) {
       throw "ERROR: " + err;
     }
