@@ -66,25 +66,3 @@ else {
     }
   });
 }
-
-function findDmpFiles(directoryName, callback/*(err, dmpFiles)*/) {
-  fs.exists(dmpDir, function(exists) {
-    if (!exists) {
-      callback("The directory '" + dmpDir + "' does not exist!");
-    }
-    else {
-      dir.files(dmpDir, function(err, files) {
-        if (err) {
-          callback("Failed finding .dmp files! ('" + err + "')");
-        }
-        else {
-          dmpFiles = files.filter(function(filename) {
-            return filename && (filename.indexOf(".dmp") == (filename.length - ".dmp".length));
-          });
-          callback(undefined, dmpFiles);
-        }
-      });
-    }
-  });
-}
-
