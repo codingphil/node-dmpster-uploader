@@ -25,44 +25,62 @@ if (!config.uploadUrl) {
 }
 console.log("Upload URL: '" + config.uploadUrl + "'");
 
-function uploadAndLog(dmpFileName, callback) {
+
+function uploadAndLogSingleDumpFile(dmpFileName, callback) {
   uploadFileLogger.uploadStarted(dmpFileName);
   uploadSingleDumpFile(config.uploadUrl, dmpFileName, tags, function(err, result) {
     uploadFileLogger.uploadFinished(dmpFileName, err, result);
-    callback();
+    if (result) {
+      result.fullPath = dmpFileName;
+    }
+    callback(null, result);
   });
+}
+
+function finishUploadResultsHandler(err, results) {
+  if (err) {
+    console.error("ERROR: Uploading dump files failed. " + err);
+  }
+  else {
+    console.log("SUCCESS! Uploading dump files finished.");
+    console.log(results);
+  }
+}
+
+function uploadMultipleDumpFiles(dmpFiles, callback) {
+  async.mapLimit(dmpFiles, maxParallelUploads, uploadAndLogSingleDumpFile, function(err, results) {
+    callback(err, results);
+  });
+}
+
+function filterSuccessfulResults(uploadResults, callback) {
+  var filteredResults = uploadResults.filter(function(result) { return result; });
+  callback(null, filteredResults);
 }
 
 if (dmpFileName) {
   console.log("Filename:   '" + dmpFileName + "'");
   console.log("Tags:       '" + tags + "'");
   
-  uploadAndLog(dmpFileName, function(err) {
-    if (err) {
-      console.error("ERROR: " + err);
-    }
-    else {
-      console.log("SUCCESS! Uploading dump file finished.");
-    }
-  });
+  async.waterfall(
+      [
+        function(callback) { callback(null, [ dmpFileName ]); },
+        uploadMultipleDumpFiles,
+        filterSuccessfulResults
+      ],
+      finishUploadResultsHandler);
 }
 else {
   console.log("Directory:  '" + dmpDir + "'");
   console.log("Tags:       '" + tags + "'");
   
-  findDumpFiles(dmpDir, function(err, dmpFiles) {
-    if (err) {
-      console.error("ERROR: " + err);
-    }
-    else {
-      async.eachLimit(dmpFiles, maxParallelUploads, uploadAndLog, function(err) {
-        if (err) {
-          throw "ERROR: Uploading dump files failed. " + err;
-        }
-        else {
-          console.log("SUCCESS! Uploading dump files finished.");
-        }
-      });
-    }
-  });
+  async.waterfall(
+    [
+      function(callback) { callback(null, dmpDir); },
+      findDumpFiles,
+      uploadMultipleDumpFiles,
+      filterSuccessfulResults
+    ],
+    finishUploadResultsHandler);
+ 
 }
