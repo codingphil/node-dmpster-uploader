@@ -5,7 +5,8 @@ var async = require('async');
 var config = require('./config');
 
 var uploadSingleDumpFile = require('./lib/upload-single-dumpfile.js');
-var findDumpFiles = require('./lib/find-dumpfiles');
+var findDumpFiles = require('./lib/find-dumpfiles.js');
+var uploadFileLogger = require('./lib/upload-file-logger.js');
 
 var dmpFileName = argv.f;
 var dmpDir = argv.d;
@@ -24,40 +25,34 @@ if (!config.uploadUrl) {
 }
 console.log("Upload URL: '" + config.uploadUrl + "'");
 
+function uploadAndLog(dmpFileName, callback) {
+  uploadFileLogger.uploadStarted(dmpFileName);
+  uploadSingleDumpFile(config.uploadUrl, dmpFileName, tags, function(err, result) {
+    uploadFileLogger.uploadFinished(dmpFileName, err, result);
+    callback();
+  });
+}
+
 if (dmpFileName) {
   console.log("Filename:   '" + dmpFileName + "'");
   console.log("Tags:       '" + tags + "'");
   
-  uploadSingleDumpFile(config.uploadUrl, dmpFileName, tags, function(err, result) {
+  uploadAndLog(dmpFileName, function(err) {
     if (err) {
-      throw "ERROR: " + err;
+      console.error("ERROR: " + err);
     }
     else {
-      console.log("SUCCESS!");
-      console.log(result);
-      console.log("Dump File URL: " + config.baseUrl + result.url);
+      console.log("SUCCESS! Uploading dump file finished.");
     }
   });
 }
 else {
-  
-  function uploadAndLog(dmpFileName, callback) {
-    console.log("Uploading file '" + dmpFileName + "' ...");
-    
-    uploadSingleDumpFile(config.uploadUrl, dmpFileName, tags, function(err, result) {
-      if (err) {
-        console.log("UPLOAD FAILED  : '" + dmpFileName + "'  (" + err + ")");
-      }
-      else {
-        console.log("UPLOAD finished: '" + dmpFileName + "' ", result);
-      }
-      callback();
-    });
-  }
+  console.log("Directory:  '" + dmpDir + "'");
+  console.log("Tags:       '" + tags + "'");
   
   findDumpFiles(dmpDir, function(err, dmpFiles) {
     if (err) {
-      throw "ERROR: " + err;
+      console.error("ERROR: " + err);
     }
     else {
       async.eachLimit(dmpFiles, maxParallelUploads, uploadAndLog, function(err) {
