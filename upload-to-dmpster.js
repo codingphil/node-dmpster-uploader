@@ -58,6 +58,20 @@ function filterSuccessfulResults(uploadResults, callback) {
   callback(null, filteredResults);
 }
 
+function sortFileNames(files, callback) {
+  callback(null, files.sort());
+}
+
+function printFileNames(files, callback) {
+  console.log("Found " + files.length + " dump files:");
+  files.forEach(function(currFile) {
+    console.log("  " + currFile);
+  });
+  console.log();
+  
+  callback(null, files);
+}
+
 if (dmpFileName) {
   console.log("Filename:   '" + dmpFileName + "'");
   console.log("Tags:       '" + tags + "'");
@@ -78,6 +92,8 @@ else {
     [
       function(callback) { callback(null, dmpDir); },
       findDumpFiles,
+      sortFileNames,
+      printFileNames,
       uploadMultipleDumpFiles,
       filterSuccessfulResults
     ],
