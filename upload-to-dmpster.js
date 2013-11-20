@@ -1,13 +1,16 @@
 var argv = require('minimist')(process.argv.slice(2));
 var fs = require('fs');
+var async = require('async');
 
 var config = require('./config');
+
 var uploadSingleDumpFile = require('./lib/upload-single-dumpfile.js');
 var findDumpFiles = require('./lib/find-dumpfiles');
 
 var dmpFileName = argv.f;
 var dmpDir = argv.d;
 var tags = argv.t || "";
+var maxParallelUploads = config.maxParallelUploads || argv.p || 2;
 
 if (!dmpFileName && !dmpDir) {
   throw "ERROR: Dump file name parameter -f or dump file directory parameter -d missing!";
@@ -37,32 +40,34 @@ if (dmpFileName) {
   });
 }
 else {
+  
+  function uploadAndLog(dmpFileName, callback) {
+    console.log("Uploading file '" + dmpFileName + "' ...");
+    
+    uploadSingleDumpFile(config.uploadUrl, dmpFileName, tags, function(err, result) {
+      if (err) {
+        console.log("UPLOAD FAILED  : '" + dmpFileName + "'  (" + err + ")");
+      }
+      else {
+        console.log("UPLOAD finished: '" + dmpFileName + "' ", result);
+      }
+      callback();
+    });
+  }
+  
   findDumpFiles(dmpDir, function(err, dmpFiles) {
     if (err) {
       throw "ERROR: " + err;
     }
     else {
-      var dmpFilesRemaining = dmpFiles.length;
-      dmpFiles.forEach(function(dmpFileName) {
-        
-        console.log("Uploading file '" + dmpFileName + "' ...");
-        
-        uploadSingleDumpFile(config.uploadUrl, dmpFileName, tags, function(err, result) {
-          if (err) {
-            console.log("UPLOAD FAILED  : '" + dmpFileName + "'  (" + err + ")");
-          }
-          else {
-            console.log("UPLOAD finished: '" + dmpFileName + "' ", result);
-            // TODO: Handler
-          }
-          dmpFilesRemaining--;
-          if (dmpFilesRemaining == 0) {
-            console.log("FINISHED.");
-          }
-        });
-        
+      async.eachLimit(dmpFiles, maxParallelUploads, uploadAndLog, function(err) {
+        if (err) {
+          throw "ERROR: Uploading dump files failed. " + err;
+        }
+        else {
+          console.log("SUCCESS! Uploading dump files finished.");
+        }
       });
-      
     }
   });
 }

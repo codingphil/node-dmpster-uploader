@@ -6,3 +6,5 @@ config.host = 'localhost';
 
 config.baseUrl = "http://" + config.host;
 config.uploadUrl = config.baseUrl + '/upload';
+
+config.maxParallelUploads = 2;

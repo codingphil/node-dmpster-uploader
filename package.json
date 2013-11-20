@@ -5,7 +5,8 @@
   "main": "upload-to-dmpster.js",
   "dependencies": {
     "form-data": "~0.1.2",
-    "minimist": "0.0.5"
+    "minimist": "0.0.5",
+    "async": "~0.2.9"
   },
   "devDependencies": {},
   "scripts": {
@@ -14,12 +15,12 @@
   "keywords": [
     "dmpster"
   ],
-  "repository" : {
-    "type" : "git",
-    "url" : "https://github.com/codingphil/node-dmpster-uploader.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codingphil/node-dmpster-uploader.git"
   },
   "bugs": {
-    "url" : "https://github.com/codingphil/node-dmpster-uploader/issues"
+    "url": "https://github.com/codingphil/node-dmpster-uploader/issues"
   },
   "homepage": "https://github.com/codingphil/node-dmpster-uploader",
   "author": "Philip Lonsing",
