@@ -39,9 +39,11 @@ function uploadAndLogSingleDumpFile(dmpFileName, callback) {
 
 function finishUploadResultsHandler(err, results) {
   if (err) {
+    console.error();
     console.error("ERROR: Uploading dump files failed. " + err);
   }
   else {
+    console.log();
     console.log("SUCCESS! Uploading dump files finished.");
     console.log(results);
   }
@@ -63,6 +65,7 @@ function sortFileNames(files, callback) {
 }
 
 function printFileNames(files, callback) {
+  console.log();
   console.log("Found " + files.length + " dump files:");
   files.forEach(function(currFile) {
     console.log("  " + currFile);
