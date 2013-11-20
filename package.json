@@ -14,6 +14,14 @@
   "keywords": [
     "dmpster"
   ],
+  "repository" : {
+    "type" : "git",
+    "url" : "https://github.com/codingphil/node-dmpster-uploader.git"
+  },
+  "bugs": {
+    "url" : "https://github.com/codingphil/node-dmpster-uploader/issues"
+  },
+  "homepage": "https://github.com/codingphil/node-dmpster-uploader",
   "author": "Philip Lonsing",
   "license": "BSD"
 }
