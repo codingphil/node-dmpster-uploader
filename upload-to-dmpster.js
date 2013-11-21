@@ -8,6 +8,7 @@ var uploadSingleDumpFile = require('./lib/upload-single-dumpfile.js');
 var findDumpFiles = require('./lib/find-dumpfiles.js');
 var uploadFileLogger = require('./lib/upload-file-logger.js');
 var FileObject = require('./lib/file-object.js');
+var autoTagger = new (require('./lib/autotagger/autotagger.js'))(config);
 
 var dmpFileName = argv.f;
 var dmpDir = argv.d;
@@ -26,10 +27,11 @@ if (!config.uploadUrl) {
 }
 console.log("Upload URL: '" + config.uploadUrl + "'");
 
+autoTagger.load();
 
 function uploadAndLogSingleDumpFile(dmpFileObject, callback) {
   uploadFileLogger.uploadStarted(dmpFileObject);
-  uploadSingleDumpFile(config.uploadUrl, dmpFileObject, tags, function(err, result) {
+  uploadSingleDumpFile(config.uploadUrl, dmpFileObject, dmpFileObject.tags || tags, function(err, result) {
     uploadFileLogger.uploadFinished(dmpFileObject, err, result);
     if (result) {
       result.fileObject = dmpFileObject;
@@ -47,6 +49,23 @@ function createSingleFileObjectArray(filePath, callback) {
       callback(null, [ new FileObject(filePath, stat) ]);
     }
   });
+}
+
+function addAutoTagsToDumpFiles(dmpFileObjects, callback) {
+  async.map(
+    dmpFileObjects,
+    function(currDumpFileObject, callback) {
+      autoTagger.createTagsForDump(tags, currDumpFileObject, function(err, resultTags) {
+        if (err) {
+          callback(err);
+        }
+        else {
+          currDumpFileObject.tags = resultTags;
+          callback(null, currDumpFileObject);
+        }
+      });
+    },
+    callback);
 }
 
 function uploadMultipleDumpFiles(dmpFileObjects, callback) {
@@ -123,6 +142,7 @@ async.waterfall(
       fileFindAsyncFunction,
       sortFileObjects,
       printFileNames,
+      addAutoTagsToDumpFiles,
       uploadMultipleDumpFiles,
       filterSuccessfulResults
     ],
