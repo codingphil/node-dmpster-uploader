@@ -10,5 +10,6 @@ config.uploadUrl = config.baseUrl + '/upload';
 config.maxParallelUploads = 2;
 
 config.autotagger = [
-    "osversion-tagger"
+    "osversion-tagger",
+    "machinename-tagger"
   ];
