@@ -63,7 +63,7 @@ function uploadAndLogSingleDumpFile(dmpFileObject, callback) {
 function createSingleFileObjectArray(filePath, callback) {
   fs.stat(filePath, function(err, stat) {
     if (err) {
-      callback(err);
+      callback("The file '" + filePath + "' does not exist!");
     }
     else {
       callback(null, [ new FileObject(filePath, stat) ]);
