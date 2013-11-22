@@ -11,6 +11,7 @@ var dmpFileName = argv.f;
 var dmpDir = argv.d;
 var tags = argv.t || "";
 var customConfigFile = argv.config || argv.c;
+var deleteAfterUpload = argv["delete"];
 
 function exitWithError(errorMessage) {
   console.error("ERROR: " + errorMessage);
@@ -24,8 +25,8 @@ if (dmpFileName && dmpDir) {
   exitWithError("Only one of the parameters -f and -d can be used at a time!");
 }
 
-var configFileName = customConfigFile || './config';
-if (!fs.existsSync(customConfigFile)) {
+var configFileName = customConfigFile || './config.js';
+if (!fs.existsSync(configFileName)) {
   exitWithError("Config file '" + customConfigFile + "' does not exist!");
 }
 console.log("Config File: " + configFileName);
@@ -39,7 +40,14 @@ console.log("Upload URL: '" + config.uploadUrl + "'");
 var maxParallelUploads = config.maxParallelUploads || argv.p || 2;
 
 var autoTagger = require('./lib/autotagger/autotagger.js');
-autoTagger.load(config.autotagger);
+autoTagger.load(config.autotagger || []);
+
+var postUploadHandlers = require('./lib/postupload-handler/postupload-handlers.js');
+var postUploadHandlersConfigList = config.postupload || [];
+if (deleteAfterUpload && (postUploadHandlersConfigList.indexOf("postupload-delete") == -1)) {
+  postUploadHandlersConfigList.push("postupload-delete");
+}
+postUploadHandlers.load(postUploadHandlersConfigList);
 
 function uploadAndLogSingleDumpFile(dmpFileObject, callback) {
   uploadFileLogger.uploadStarted(dmpFileObject);
@@ -78,6 +86,19 @@ function addAutoTagsToDumpFiles(dmpFileObjects, callback) {
       });
     },
     callback);
+}
+
+function invokePostUploadHandlers(results, callback) {
+  if (postUploadHandlers.isEmpty()) {
+    callback(null, results);
+  }
+  else {
+    console.log("Post-upload-handlers ...");
+    postUploadHandlers.invokeHandlers(results, function(err, invokeResult) {
+      console.log("Post-upload-handlers finished.");
+      callback(err, results);
+    });
+  }
 }
 
 function uploadMultipleDumpFiles(dmpFileObjects, callback) {
@@ -155,7 +176,8 @@ async.waterfall(
       printFileNames,
       addAutoTagsToDumpFiles,
       uploadMultipleDumpFiles,
-      filterSuccessfulResults
+      filterSuccessfulResults,
+      invokePostUploadHandlers
     ],
     finishUploadResultsHandler);
 

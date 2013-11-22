@@ -18,3 +18,7 @@ config.autotagger = [
       formatter: function(varValue) { return "USER:" + varValue; }
     }
   ];
+
+config.postupload = [
+    //"postupload-delete"
+  ];
