@@ -38,8 +38,8 @@ console.log("Upload URL: '" + config.uploadUrl + "'");
 
 var maxParallelUploads = config.maxParallelUploads || argv.p || 2;
 
-var autoTagger = new (require('./lib/autotagger/autotagger.js'))(config);
-autoTagger.load();
+var autoTagger = require('./lib/autotagger/autotagger.js');
+autoTagger.load(config.autotagger);
 
 function uploadAndLogSingleDumpFile(dmpFileObject, callback) {
   uploadFileLogger.uploadStarted(dmpFileObject);
