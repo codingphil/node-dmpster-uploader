@@ -11,5 +11,10 @@ config.maxParallelUploads = 2;
 
 config.autotagger = [
     "osversion-tagger",
-    "machinename-tagger"
+    "machinename-tagger",
+    {
+      name: "envvar-tagger",
+      varName: "USERNAME",
+      formatter: function(varValue) { return "USER:" + varValue; }
+    }
   ];
