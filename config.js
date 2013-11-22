@@ -21,4 +21,9 @@ config.autotagger = [
 
 config.postupload = [
     //"postupload-delete"
+    {
+      name: "postupload-createhtmlfile",
+      template: __dirname + "/templates/dump.ejs",
+      baseUrl: config.baseUrl
+    }
   ];
