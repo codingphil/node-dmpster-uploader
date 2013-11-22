@@ -2,31 +2,43 @@ var argv = require('minimist')(process.argv.slice(2));
 var fs = require('fs');
 var async = require('async');
 
-var config = require('./config');
-
 var uploadSingleDumpFile = require('./lib/upload-single-dumpfile.js');
 var findDumpFiles = require('./lib/find-dumpfiles.js');
 var uploadFileLogger = require('./lib/upload-file-logger.js');
 var FileObject = require('./lib/file-object.js');
-var autoTagger = new (require('./lib/autotagger/autotagger.js'))(config);
 
 var dmpFileName = argv.f;
 var dmpDir = argv.d;
 var tags = argv.t || "";
-var maxParallelUploads = config.maxParallelUploads || argv.p || 2;
+var customConfigFile = argv.config || argv.c;
+
+function exitWithError(errorMessage) {
+  console.error("ERROR: " + errorMessage);
+  process.exit(-1);
+}
 
 if (!dmpFileName && !dmpDir) {
-  throw "ERROR: Dump file name parameter -f or dump file directory parameter -d missing!";
+  exitWithError("Dump file name parameter -f or dump file directory parameter -d missing!");
 }
 if (dmpFileName && dmpDir) {
-  throw "ERROR: Only one of the parameters -f and -d can be used at a time!";
+  exitWithError("Only one of the parameters -f and -d can be used at a time!");
 }
 
+var configFileName = customConfigFile || './config';
+if (!fs.existsSync(customConfigFile)) {
+  exitWithError("Config file '" + customConfigFile + "' does not exist!");
+}
+console.log("Config File: " + configFileName);
+var config = require(configFileName);
+
 if (!config.uploadUrl) {
-  throw "ERROR: Configuration entry 'uploadUrl' missing! Check your config.js file.";
+  exitWithError("Configuration entry 'uploadUrl' missing! Check your config.js file.");
 }
 console.log("Upload URL: '" + config.uploadUrl + "'");
 
+var maxParallelUploads = config.maxParallelUploads || argv.p || 2;
+
+var autoTagger = new (require('./lib/autotagger/autotagger.js'))(config);
 autoTagger.load();
 
 function uploadAndLogSingleDumpFile(dmpFileObject, callback) {
@@ -107,8 +119,7 @@ function printFileNames(files, callback) {
 
 function finishUploadResultsHandler(err, results) {
   if (err) {
-    console.error();
-    console.error("ERROR: Uploading dump files failed. " + err);
+    exitWithError("Uploading dump files failed. " + err);
   }
   else {
     console.log();
