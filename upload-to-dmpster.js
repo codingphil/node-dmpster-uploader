@@ -14,6 +14,11 @@ var customConfigFile = argv.config || argv.c;
 var deleteAfterUpload = argv["delete"];
 var summaryFileName = argv.s;
 
+var directoryDepth = argv["directoryDepth"];
+if (typeof(directoryDepth) === "undefined") {
+  directoryDepth = -1;
+}
+
 function exitWithError(errorMessage) {
   console.error("ERROR: " + errorMessage);
   process.exit(-1);
@@ -194,10 +199,11 @@ if (dmpFileName) {
 }
 else {
   console.log("Directory:  '" + dmpDir + "'");
+  console.log("Directory Depth: " + ((directoryDepth >= 0) ? directoryDepth : "UNLIMITED"));
   console.log("Tags:       '" + tags + "'");
   
   fileFindAsyncFunction = function(callback) {
-    findDumpFiles(dmpDir, callback);
+    findDumpFiles(dmpDir, directoryDepth, callback);
   };
   
 }
