@@ -23,7 +23,7 @@ config.postupload = [
     //"postupload-delete"
     {
       name: "postupload-createhtmlfile",
-      template: __dirname + "/templates/dump.ejs",
+      template: undefined, // default. You can specify a custom EJS file here.
       baseUrl: config.baseUrl
     }
   ];
