@@ -12,6 +12,7 @@ var dmpDir = argv.d;
 var tags = argv.t || "";
 var customConfigFile = argv.config || argv.c;
 var deleteAfterUpload = argv["delete"];
+var summaryFileName = argv.s;
 
 function exitWithError(errorMessage) {
   console.error("ERROR: " + errorMessage);
@@ -35,6 +36,9 @@ var config = require(configFileName);
 if (!config.uploadUrl) {
   exitWithError("Configuration entry 'uploadUrl' missing! Check your config.js file.");
 }
+
+config.dmpsterUrl = config.baseUrl + "/dmpster";
+
 console.log("Upload URL: '" + config.uploadUrl + "'");
 
 var maxParallelUploads = config.maxParallelUploads || argv.p || 2;
@@ -49,12 +53,24 @@ if (deleteAfterUpload && (postUploadHandlersConfigList.indexOf("postupload-delet
 }
 postUploadHandlers.load(postUploadHandlersConfigList);
 
+var summaryWriter;
+if (summaryFileName) {
+  console.log("Summary File: " + summaryFileName);
+  try {
+    summaryWriter = require("./lib/upload-summary-writer")(config);
+  }
+  catch (ex) {
+    exitWithError("Could not initialize the summary writer module! (" + ex + ")");
+  }
+}
+
 function uploadAndLogSingleDumpFile(dmpFileObject, callback) {
   uploadFileLogger.uploadStarted(dmpFileObject);
   uploadSingleDumpFile(config.uploadUrl, dmpFileObject, dmpFileObject.tags || tags, function(err, result) {
     uploadFileLogger.uploadFinished(dmpFileObject, err, result);
     if (result) {
       result.fileObject = dmpFileObject;
+      result.url = config.baseUrl + result.url;
     }
     callback(null, result);
   });
@@ -138,6 +154,23 @@ function printFileNames(files, callback) {
   callback(null, files);
 }
 
+
+function writeSummaryFile(results, callback) {
+  if (summaryWriter) {
+    summaryWriter.writeSummary(results, summaryFileName, function(err) {
+      if (err) {
+        callback(err);
+      }
+      else {
+        callback(null, results);
+      }
+    });
+  }
+  else {
+    callback(null, results);
+  }
+}
+
 function finishUploadResultsHandler(err, results) {
   if (err) {
     exitWithError("Uploading dump files failed. " + err);
@@ -177,7 +210,8 @@ async.waterfall(
       addAutoTagsToDumpFiles,
       uploadMultipleDumpFiles,
       filterSuccessfulResults,
-      invokePostUploadHandlers
+      invokePostUploadHandlers,
+      writeSummaryFile
     ],
     finishUploadResultsHandler);
 

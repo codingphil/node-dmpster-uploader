@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Dumps uploaded to dmpster</title>
+</head>
+<body>
+  <h1>Dumps uploaded to dmpster (<a href="<%= dmpsterUrl %>" target="_blank"><%= dmpsterUrl %></a>)</h1>
+  <ul>
+  <% dumps.forEach(function(currDump) { %>
+    <li>
+      <a href="<%= currDump.url %>" target="_blank"><%= currDump.name %></a><br>
+      <%= currDump.fileObject.tags %>  
+    </li>
+  <% }); %>
+  </ul>
+</body>
+</html>
