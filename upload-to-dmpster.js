@@ -122,6 +122,16 @@ function invokePostUploadHandlers(results, callback) {
   }
 }
 
+function filterFoundDumpFilesBySize(dmpFileObjects, callback) {
+  if (config.minDumpSize) {
+    var filteredDumpFiles = dmpFileObjects.filter(function(dumpFile) { return dumpFile.size >= config.minDumpSize; });
+    callback(null, filteredDumpFiles);
+  }
+  else {
+    callback(null, dmpFileObjects);
+  }
+}
+
 function uploadMultipleDumpFiles(dmpFileObjects, callback) {
   async.mapLimit(dmpFileObjects, maxParallelUploads, uploadAndLogSingleDumpFile, function(err, results) {
     callback(err, results);
@@ -211,6 +221,7 @@ else {
 async.waterfall(
     [
       fileFindAsyncFunction,
+      filterFoundDumpFilesBySize,
       sortFileObjects,
       printFileNames,
       addAutoTagsToDumpFiles,

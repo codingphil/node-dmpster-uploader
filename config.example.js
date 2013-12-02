@@ -8,6 +8,7 @@ config.baseUrl = "http://" + config.host;
 config.uploadUrl = config.baseUrl + '/upload';
 
 config.maxParallelUploads = 2;
+// config.minDumpSize = 1024 * 1024; // 1MB
 
 config.autotagger = [
     "osversion-tagger",
